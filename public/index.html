@@ -1,104 +1,296 @@
 <!DOCTYPE html>
-<html lang="th" class="dark">
+<html lang="th">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Todo List</title>
+  <title>Todo List — Dashboard</title>
 
-  <!-- Tailwind CSS via CDN -->
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    // เปิด dark mode แบบ class-based
     tailwind.config = {
-      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#465FFF',
+            'primary-dark': '#3a52e0',
+          }
+        }
+      }
     }
   </script>
 
   <style>
-    /* Custom scrollbar สำหรับ dark mode */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #111827; }
-    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-    /* Transition สำหรับ todo item */
-    .todo-item { transition: opacity 0.2s, transform 0.15s; }
-    .todo-item:hover { transform: translateX(2px); }
+    /* Sidebar active link */
+    .nav-link.active { background: #eff2ff; color: #465FFF; }
+    .nav-link.active svg { color: #465FFF; }
 
-    /* Glow effect สำหรับ input focus */
-    #todo-input:focus { box-shadow: 0 0 0 2px #6366f1, 0 0 12px rgba(99,102,241,0.4); }
+    /* Todo row hover */
+    .todo-row { transition: background 0.15s; }
+    .todo-row:hover { background: #f8fafc; }
 
-    /* ขีดฆ่าเมื่อ task เสร็จ */
-    .line-through-text { text-decoration: line-through; }
+    /* Input focus ring */
+    #todo-input:focus { outline: none; border-color: #465FFF; box-shadow: 0 0 0 3px rgba(70,95,255,0.12); }
+
+    /* Sidebar collapse on mobile */
+    @media (max-width: 1023px) { #sidebar { transform: translateX(-100%); } }
+    #sidebar.open { transform: translateX(0); }
   </style>
 </head>
 
-<!-- พื้นหลังสีดำ dark mode -->
-<body class="dark bg-gray-950 min-h-screen flex items-start justify-center py-14 px-4">
+<body class="bg-gray-50 text-gray-800 font-sans flex h-screen overflow-hidden">
 
-  <!-- Card หลัก -->
-  <div class="w-full max-w-lg bg-gray-900 rounded-2xl shadow-2xl shadow-black/60 border border-gray-800 p-8">
+  <!-- ═══════════════════════════════════════════
+       SIDEBAR
+  ════════════════════════════════════════════ -->
+  <aside id="sidebar"
+    class="fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-100
+           flex flex-col transition-transform duration-300 ease-in-out">
 
-    <!-- Header -->
-    <div class="mb-8 text-center">
-      <h1 class="text-3xl font-bold text-white tracking-tight">
-        ✅ My Todo List
-      </h1>
-      <!-- นับจำนวน task ที่ยังไม่เสร็จ -->
-      <p id="summary" class="mt-2 text-sm text-gray-500"></p>
+    <!-- Logo -->
+    <div class="flex items-center gap-2.5 px-6 py-5 border-b border-gray-100">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+           style="background:#465FFF">
+        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0
+               014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42
+               3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806
+               1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42
+               3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0
+               01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438
+               3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+        </svg>
+      </div>
+      <span class="text-base font-bold text-gray-900 tracking-tight">TodoAdmin</span>
     </div>
 
-    <!-- Input Form -->
-    <div class="flex gap-2 mb-6">
-      <input
-        id="todo-input"
-        type="text"
-        placeholder="เพิ่ม task ใหม่..."
-        autocomplete="off"
-        class="flex-1 bg-gray-800 text-white placeholder-gray-600
-               border border-gray-700 rounded-xl px-4 py-2.5 text-sm
-               outline-none transition-all duration-200"
-      />
-      <button
-        id="add-btn"
-        class="bg-indigo-600 hover:bg-indigo-500 active:scale-95
-               text-white font-semibold px-5 py-2.5 rounded-xl text-sm
-               transition-all duration-150 cursor-pointer whitespace-nowrap"
-      >
-        + เพิ่ม
+    <!-- Nav -->
+    <nav class="flex-1 px-4 py-4 space-y-0.5 overflow-y-auto">
+
+      <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 pt-2 pb-1">
+        Main
+      </p>
+
+      <!-- Dashboard (active) -->
+      <a href="#" class="nav-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        Dashboard
+      </a>
+
+      <!-- Tasks -->
+      <a href="#" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+        Tasks
+        <span class="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+              id="sidebar-badge"
+              style="background:#eff2ff;color:#465FFF">0</span>
+      </a>
+
+      <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 pt-4 pb-1">
+        Filters
+      </p>
+
+      <button data-filter="all"
+        class="filter-btn w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors">
+        <span class="w-2 h-2 rounded-full bg-gray-300"></span> ทั้งหมด
       </button>
+      <button data-filter="active"
+        class="filter-btn w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors">
+        <span class="w-2 h-2 rounded-full" style="background:#465FFF"></span> ยังไม่เสร็จ
+      </button>
+      <button data-filter="completed"
+        class="filter-btn w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> เสร็จแล้ว
+      </button>
+    </nav>
+
+    <!-- User profile -->
+    <div class="px-4 py-4 border-t border-gray-100">
+      <div class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer">
+        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+             style="background:#465FFF">A</div>
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-gray-800 truncate">Admin</p>
+          <p class="text-xs text-gray-400 truncate">admin@todo.app</p>
+        </div>
+      </div>
     </div>
+  </aside>
 
-    <!-- Filter Buttons -->
-    <div class="flex gap-2 mb-5">
-      <button
-        class="filter-btn flex-1 py-1.5 rounded-lg text-xs font-medium border
-               border-indigo-500 bg-indigo-600 text-white transition-all duration-150 cursor-pointer"
-        data-filter="all"
-      >ทั้งหมด</button>
-      <button
-        class="filter-btn flex-1 py-1.5 rounded-lg text-xs font-medium border
-               border-gray-700 bg-gray-800 text-gray-400 hover:text-white
-               hover:border-gray-500 transition-all duration-150 cursor-pointer"
-        data-filter="active"
-      >ยังไม่เสร็จ</button>
-      <button
-        class="filter-btn flex-1 py-1.5 rounded-lg text-xs font-medium border
-               border-gray-700 bg-gray-800 text-gray-400 hover:text-white
-               hover:border-gray-500 transition-all duration-150 cursor-pointer"
-        data-filter="completed"
-      >เสร็จแล้ว</button>
-    </div>
+  <!-- Sidebar overlay (mobile) -->
+  <div id="overlay" class="fixed inset-0 bg-black/30 z-30 hidden lg:hidden"
+       onclick="closeSidebar()"></div>
 
-    <!-- Divider -->
-    <div class="border-t border-gray-800 mb-4"></div>
+  <!-- ═══════════════════════════════════════════
+       MAIN AREA
+  ════════════════════════════════════════════ -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-    <!-- Todo List -->
-    <ul id="todo-list" class="space-y-2 min-h-[60px]"></ul>
+    <!-- ── Topbar ── -->
+    <header class="bg-white border-b border-gray-100 px-6 py-4 flex items-center gap-4 flex-shrink-0">
 
+      <!-- Hamburger (mobile) -->
+      <button onclick="openSidebar()"
+        class="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+
+      <div>
+        <h1 class="text-lg font-bold text-gray-900 leading-tight">My Todo List</h1>
+        <p class="text-xs text-gray-400">จัดการ task ของคุณ</p>
+      </div>
+
+      <div class="ml-auto flex items-center gap-2">
+        <!-- Notification bell -->
+        <button class="relative p-2 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0
+                 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0
+                 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+        </button>
+
+        <!-- Avatar -->
+        <div class="w-8 h-8 rounded-full text-white text-xs font-bold flex items-center justify-center cursor-pointer"
+             style="background:#465FFF">A</div>
+      </div>
+    </header>
+
+    <!-- ── Scrollable content ── -->
+    <main class="flex-1 overflow-y-auto p-6">
+
+      <!-- Stat Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+
+        <!-- Total -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+               style="background:#eff2ff">
+            <svg class="w-5 h-5" style="color:#465FFF" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0
+                   002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0
+                   002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 font-medium">ทั้งหมด</p>
+            <p id="stat-total" class="text-2xl font-bold text-gray-900">0</p>
+          </div>
+        </div>
+
+        <!-- Pending -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+          <div class="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 font-medium">ยังไม่เสร็จ</p>
+            <p id="stat-pending" class="text-2xl font-bold text-gray-900">0</p>
+          </div>
+        </div>
+
+        <!-- Done -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+          <div class="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs text-gray-400 font-medium">เสร็จแล้ว</p>
+            <p id="stat-done" class="text-2xl font-bold text-gray-900">0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Task Card ── -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
+        <!-- Card header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 class="text-sm font-bold text-gray-900">Task List</h2>
+            <p id="summary" class="text-xs text-gray-400 mt-0.5"></p>
+          </div>
+
+          <!-- Add form -->
+          <div class="flex items-center gap-2">
+            <input
+              id="todo-input"
+              type="text"
+              placeholder="Task ใหม่..."
+              autocomplete="off"
+              class="text-sm border border-gray-200 rounded-lg px-3 py-2 w-52
+                     text-gray-700 placeholder-gray-400 transition-all duration-200"
+            />
+            <button
+              id="add-btn"
+              class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold
+                     text-white transition-all duration-150 active:scale-95 cursor-pointer"
+              style="background:#465FFF"
+              onmouseover="this.style.background='#3a52e0'"
+              onmouseout="this.style.background='#465FFF'"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              เพิ่ม
+            </button>
+          </div>
+        </div>
+
+        <!-- Table header -->
+        <div class="grid grid-cols-[1fr_auto_auto] gap-4 px-6 py-2.5 bg-gray-50 border-b border-gray-100">
+          <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Task</span>
+          <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Status</span>
+          <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Action</span>
+        </div>
+
+        <!-- Todo rows -->
+        <ul id="todo-list" class="divide-y divide-gray-50"></ul>
+
+      </div>
+      <!-- end Task Card -->
+
+    </main>
   </div>
+  <!-- end Main Area -->
 
-  <!-- โหลด JavaScript หลัก -->
+  <!-- ── Error toast container ── -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2"></div>
+
   <script src="app.js"></script>
 
+  <script>
+    // ── Sidebar mobile helpers ──
+    function openSidebar() {
+      document.getElementById('sidebar').classList.add('open');
+      document.getElementById('overlay').classList.remove('hidden');
+    }
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('overlay').classList.add('hidden');
+    }
+  </script>
 </body>
 </html>
