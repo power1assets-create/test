@@ -185,8 +185,8 @@ function showToast(msg, type = 'error') {
   const toast = document.createElement('div');
 
   const colors = type === 'error'
-    ? 'bg-red-50 border-red-200 text-red-700'
-    : 'bg-emerald-50 border-emerald-200 text-emerald-700';
+    ? 'bg-red-50 border-red-200 text-red-600'
+    : 'bg-violet-50 border-violet-200 text-violet-700';
 
   toast.className = `flex items-center gap-2 px-4 py-3 rounded-xl border shadow-sm text-sm ${colors}`;
   toast.innerHTML = `
@@ -210,11 +210,11 @@ function showToast(msg, type = 'error') {
 filterBtns.forEach((btn) => {
   btn.addEventListener('click', async () => {
     filterBtns.forEach((b) => {
-      b.classList.remove('bg-blue-50', 'font-semibold');
-      b.style.color = '';
+      b.classList.remove('text-white', 'font-semibold');
+      b.classList.add('text-white/50');
     });
-    btn.classList.add('bg-blue-50', 'font-semibold');
-    btn.style.color = '#465FFF';
+    btn.classList.remove('text-white/50');
+    btn.classList.add('text-white', 'font-semibold');
 
     currentFilter = btn.dataset.filter;
     await loadTodos();

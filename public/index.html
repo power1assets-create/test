@@ -5,58 +5,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Todo List — Dashboard</title>
 
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#465FFF',
-            'primary-dark': '#3a52e0',
-          }
-        }
-      }
-    }
-  </script>
 
   <style>
+    /* ── Rainbow gradient definitions ── */
+    .rainbow-bg    { background: linear-gradient(135deg, #ff6b6b, #ff9f43, #ffd32a, #0be881, #48dbfb, #a29bfe, #fd79a8); }
+    .rainbow-text  { background: linear-gradient(90deg, #ff6b6b, #ff9f43, #ffd32a, #26de81, #2bcbba, #45aaf2, #a55eea); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .rainbow-border{ border-image: linear-gradient(135deg, #ff6b6b, #ff9f43, #ffd32a, #0be881, #48dbfb, #a29bfe, #fd79a8) 1; }
+    .rainbow-btn   { background: linear-gradient(90deg, #a29bfe, #74b9ff, #55efc4); transition: filter 0.2s, transform 0.15s; }
+    .rainbow-btn:hover { filter: brightness(1.1); transform: scale(1.03); }
+    .rainbow-btn:active{ transform: scale(0.97); }
+
+    /* Sidebar */
+    .sidebar-gradient { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
+    .nav-link.active  { background: rgba(255,255,255,0.12); }
+    .nav-link:hover   { background: rgba(255,255,255,0.07); }
+
     /* Scrollbar */
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(#a29bfe, #fd79a8); border-radius: 4px; }
 
-    /* Sidebar active link */
-    .nav-link.active { background: #eff2ff; color: #465FFF; }
-    .nav-link.active svg { color: #465FFF; }
-
-    /* Todo row hover */
+    /* Todo row */
     .todo-row { transition: background 0.15s; }
-    .todo-row:hover { background: #f8fafc; }
+    .todo-row:hover { background: #fdf6ff; }
 
-    /* Input focus ring */
-    #todo-input:focus { outline: none; border-color: #465FFF; box-shadow: 0 0 0 3px rgba(70,95,255,0.12); }
+    /* Input focus */
+    #todo-input:focus { outline: none; border-color: #a29bfe; box-shadow: 0 0 0 3px rgba(162,155,254,0.2); }
 
-    /* Sidebar collapse on mobile */
+    /* Stat card hover */
+    .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+
+    /* Sidebar mobile */
     @media (max-width: 1023px) { #sidebar { transform: translateX(-100%); } }
     #sidebar.open { transform: translateX(0); }
+
+    /* Rainbow shimmer on logo text */
+    @keyframes shimmer {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .shimmer-text {
+      background: linear-gradient(90deg, #ff6b6b, #ff9f43, #ffd32a, #26de81, #48dbfb, #a29bfe, #fd79a8, #ff6b6b);
+      background-size: 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 4s linear infinite;
+    }
   </style>
 </head>
 
 <body class="bg-gray-50 text-gray-800 font-sans flex h-screen overflow-hidden">
 
-  <!-- ═══════════════════════════════════════════
-       SIDEBAR
-  ════════════════════════════════════════════ -->
+  <!-- ══════════════════════════════════════
+       SIDEBAR (dark + rainbow accents)
+  ═════════════════════════════════════════ -->
   <aside id="sidebar"
-    class="fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-gray-100
+    class="sidebar-gradient fixed lg:static inset-y-0 left-0 z-40 w-64
            flex flex-col transition-transform duration-300 ease-in-out">
 
     <!-- Logo -->
-    <div class="flex items-center gap-2.5 px-6 py-5 border-b border-gray-100">
-      <div class="w-8 h-8 rounded-lg flex items-center justify-center"
-           style="background:#465FFF">
-        <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div class="flex items-center gap-3 px-6 py-5 border-b border-white/10">
+      <div class="w-9 h-9 rounded-xl rainbow-bg flex items-center justify-center flex-shrink-0 shadow-lg">
+        <svg class="w-5 h-5 text-white drop-shadow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0
                014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42
@@ -67,81 +81,72 @@
                3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
         </svg>
       </div>
-      <span class="text-base font-bold text-gray-900 tracking-tight">TodoAdmin</span>
+      <span class="text-base font-bold shimmer-text tracking-tight">TodoAdmin</span>
     </div>
 
     <!-- Nav -->
     <nav class="flex-1 px-4 py-4 space-y-0.5 overflow-y-auto">
 
-      <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 pt-2 pb-1">
-        Main
-      </p>
+      <p class="text-[10px] font-semibold text-white/30 uppercase tracking-widest px-3 pt-2 pb-1">Main</p>
 
-      <!-- Dashboard (active) -->
-      <a href="#" class="nav-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <a href="#" class="nav-link active flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white transition-colors">
+        <svg class="w-4 h-4 text-violet-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
         </svg>
         Dashboard
       </a>
 
-      <!-- Tasks -->
-      <a href="#" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <a href="#" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 transition-colors">
+        <svg class="w-4 h-4 text-pink-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
         </svg>
         Tasks
-        <span class="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-              id="sidebar-badge"
-              style="background:#eff2ff;color:#465FFF">0</span>
+        <!-- badge -->
+        <span id="sidebar-badge"
+          class="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white rainbow-bg">0</span>
       </a>
 
-      <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-widest px-3 pt-4 pb-1">
-        Filters
-      </p>
+      <p class="text-[10px] font-semibold text-white/30 uppercase tracking-widest px-3 pt-5 pb-1">Filters</p>
 
       <button data-filter="all"
-        class="filter-btn w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors">
-        <span class="w-2 h-2 rounded-full bg-gray-300"></span> ทั้งหมด
+        class="filter-btn w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white transition-colors">
+        <span class="w-2 h-2 rounded-full bg-white/30"></span>ทั้งหมด
       </button>
       <button data-filter="active"
-        class="filter-btn w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors">
-        <span class="w-2 h-2 rounded-full" style="background:#465FFF"></span> ยังไม่เสร็จ
+        class="filter-btn w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white transition-colors">
+        <span class="w-2 h-2 rounded-full bg-yellow-300"></span>ยังไม่เสร็จ
       </button>
       <button data-filter="completed"
-        class="filter-btn w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors">
-        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> เสร็จแล้ว
+        class="filter-btn w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/50 hover:text-white transition-colors">
+        <span class="w-2 h-2 rounded-full bg-green-400"></span>เสร็จแล้ว
       </button>
     </nav>
 
-    <!-- User profile -->
-    <div class="px-4 py-4 border-t border-gray-100">
-      <div class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer">
-        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-             style="background:#465FFF">A</div>
+    <!-- User -->
+    <div class="px-4 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/10 cursor-pointer transition-colors">
+        <div class="w-8 h-8 rounded-full rainbow-bg flex items-center justify-center text-white text-xs font-bold flex-shrink-0">A</div>
         <div class="min-w-0">
-          <p class="text-sm font-semibold text-gray-800 truncate">Admin</p>
-          <p class="text-xs text-gray-400 truncate">admin@todo.app</p>
+          <p class="text-sm font-semibold text-white truncate">Admin</p>
+          <p class="text-xs text-white/40 truncate">admin@todo.app</p>
         </div>
       </div>
     </div>
   </aside>
 
-  <!-- Sidebar overlay (mobile) -->
-  <div id="overlay" class="fixed inset-0 bg-black/30 z-30 hidden lg:hidden"
-       onclick="closeSidebar()"></div>
+  <!-- Mobile overlay -->
+  <div id="overlay" class="fixed inset-0 bg-black/40 z-30 hidden lg:hidden" onclick="closeSidebar()"></div>
 
-  <!-- ═══════════════════════════════════════════
+  <!-- ══════════════════════════════════════
        MAIN AREA
-  ════════════════════════════════════════════ -->
+  ═════════════════════════════════════════ -->
   <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-    <!-- ── Topbar ── -->
+    <!-- Topbar -->
     <header class="bg-white border-b border-gray-100 px-6 py-4 flex items-center gap-4 flex-shrink-0">
 
-      <!-- Hamburger (mobile) -->
       <button onclick="openSidebar()"
         class="lg:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -150,13 +155,12 @@
       </button>
 
       <div>
-        <h1 class="text-lg font-bold text-gray-900 leading-tight">My Todo List</h1>
+        <h1 class="text-lg font-bold leading-tight rainbow-text">My Todo List</h1>
         <p class="text-xs text-gray-400">จัดการ task ของคุณ</p>
       </div>
 
       <div class="ml-auto flex items-center gap-2">
-        <!-- Notification bell -->
-        <button class="relative p-2 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+        <button class="p-2 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0
@@ -164,24 +168,22 @@
                  .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
           </svg>
         </button>
-
-        <!-- Avatar -->
-        <div class="w-8 h-8 rounded-full text-white text-xs font-bold flex items-center justify-center cursor-pointer"
-             style="background:#465FFF">A</div>
+        <div class="w-8 h-8 rounded-full rainbow-bg text-white text-xs font-bold flex items-center justify-center cursor-pointer shadow-md">A</div>
       </div>
     </header>
 
-    <!-- ── Scrollable content ── -->
+    <!-- Content -->
     <main class="flex-1 overflow-y-auto p-6">
 
       <!-- Stat Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
 
         <!-- Total -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
+        <div class="stat-card bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4 overflow-hidden relative">
+          <div class="absolute top-0 left-0 right-0 h-1 rainbow-bg"></div>
           <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-               style="background:#eff2ff">
-            <svg class="w-5 h-5" style="color:#465FFF" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               style="background:linear-gradient(135deg,#a29bfe22,#fd79a822)">
+            <svg class="w-5 h-5" style="color:#a29bfe" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0
                    002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0
@@ -195,9 +197,11 @@
         </div>
 
         <!-- Pending -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-          <div class="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="stat-card bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4 overflow-hidden relative">
+          <div class="absolute top-0 left-0 right-0 h-1" style="background:linear-gradient(90deg,#ffd32a,#ff9f43)"></div>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+               style="background:linear-gradient(135deg,#ffd32a22,#ff9f4322)">
+            <svg class="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
@@ -209,9 +213,11 @@
         </div>
 
         <!-- Done -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4">
-          <div class="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="stat-card bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-center gap-4 overflow-hidden relative">
+          <div class="absolute top-0 left-0 right-0 h-1" style="background:linear-gradient(90deg,#0be881,#48dbfb)"></div>
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+               style="background:linear-gradient(135deg,#0be88122,#48dbfb22)">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
@@ -223,8 +229,11 @@
         </div>
       </div>
 
-      <!-- ── Task Card ── -->
+      <!-- Task Card -->
       <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
+        <!-- Card top rainbow bar -->
+        <div class="h-1 rainbow-bg"></div>
 
         <!-- Card header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -233,7 +242,6 @@
             <p id="summary" class="text-xs text-gray-400 mt-0.5"></p>
           </div>
 
-          <!-- Add form -->
           <div class="flex items-center gap-2">
             <input
               id="todo-input"
@@ -245,11 +253,8 @@
             />
             <button
               id="add-btn"
-              class="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold
-                     text-white transition-all duration-150 active:scale-95 cursor-pointer"
-              style="background:#465FFF"
-              onmouseover="this.style.background='#3a52e0'"
-              onmouseout="this.style.background='#465FFF'"
+              class="rainbow-btn flex items-center gap-1.5 px-4 py-2 rounded-lg
+                     text-sm font-semibold text-white cursor-pointer shadow-md"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -260,30 +265,28 @@
         </div>
 
         <!-- Table header -->
-        <div class="grid grid-cols-[1fr_auto_auto] gap-4 px-6 py-2.5 bg-gray-50 border-b border-gray-100">
+        <div class="grid grid-cols-[1fr_auto_auto] gap-4 px-6 py-2.5 border-b border-gray-100"
+             style="background:linear-gradient(90deg,#fdf6ff,#f0f9ff)">
           <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Task</span>
           <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Status</span>
           <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Action</span>
         </div>
 
-        <!-- Todo rows -->
+        <!-- Rows -->
         <ul id="todo-list" class="divide-y divide-gray-50"></ul>
 
       </div>
-      <!-- end Task Card -->
 
     </main>
   </div>
-  <!-- end Main Area -->
 
-  <!-- ── Error toast container ── -->
+  <!-- Toast container -->
   <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2"></div>
 
   <script src="app.js"></script>
 
   <script>
-    // ── Sidebar mobile helpers ──
-    function openSidebar() {
+    function openSidebar()  {
       document.getElementById('sidebar').classList.add('open');
       document.getElementById('overlay').classList.remove('hidden');
     }
