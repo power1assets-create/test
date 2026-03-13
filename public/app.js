@@ -46,7 +46,7 @@ async function addTodo(text) {
 
 // สลับสถานะ completed ของ Todo ตาม id
 async function toggleTodo(id) {
-  const res = await fetch(`/api/todos/${id}`, { method: 'PATCH' });
+  const res = await fetch(`/api/todos/${id}`, { method: 'PUT' });
   if (!res.ok) return;
 
   const updated = await res.json();
@@ -72,8 +72,8 @@ async function deleteTodo(id) {
 function render() {
   // กรองรายการตาม filter ที่เลือก
   const filtered = todos.filter((t) => {
-    if (currentFilter === 'active')    return !t.completed;
-    if (currentFilter === 'completed') return t.completed;
+    if (currentFilter === 'active')    return !t.done;
+    if (currentFilter === 'completed') return t.done;
     return true; // 'all'
   });
 
@@ -92,7 +92,7 @@ function render() {
   }
 
   // อัปเดตสรุปจำนวน
-  const remaining = todos.filter((t) => !t.completed).length;
+  const remaining = todos.filter((t) => !t.done).length;
   summary.textContent = `เหลือ ${remaining} รายการที่ยังไม่เสร็จ จากทั้งหมด ${todos.length} รายการ`;
 }
 
@@ -102,21 +102,21 @@ function createTodoElement(todo) {
   li.className = [
     'todo-item flex items-center gap-3 px-4 py-3 rounded-xl',
     'bg-gray-800 border border-gray-700',
-    todo.completed ? 'opacity-50' : '',
+    todo.done ? 'opacity-50' : '',
   ].join(' ');
 
   // Checkbox สำหรับสลับสถานะ
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
   checkbox.className = 'w-4 h-4 accent-indigo-500 cursor-pointer flex-shrink-0';
-  checkbox.checked = todo.completed;
+  checkbox.checked = todo.done;
   checkbox.addEventListener('change', () => toggleTodo(todo.id));
 
   // ข้อความ
   const span = document.createElement('span');
   span.className = [
     'flex-1 text-sm break-words',
-    todo.completed ? 'line-through-text text-gray-500' : 'text-gray-100',
+    todo.done ? 'line-through-text text-gray-500' : 'text-gray-100',
   ].join(' ');
   span.textContent = todo.text;
 

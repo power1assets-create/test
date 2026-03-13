@@ -1,81 +1,102 @@
-// นำเข้า Express framework
 const express = require('express');
-const path = require('path');
+const path    = require('path');
 
-// สร้าง Express application
-const app = express();
-
-// กำหนด PORT จาก environment variable หรือใช้ 3000 เป็นค่าเริ่มต้น
+const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// --- Middleware ---
-
-// แปลง request body ที่เป็น JSON ให้อ่านได้
+// ─── Middleware ────────────────────────────────────────────────
 app.use(express.json());
-
-// Serve static files (HTML, CSS, JS) จากโฟลเดอร์ /public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- In-memory data store ---
-// เก็บรายการ Todo ไว้ใน array (รีเซ็ตทุกครั้งที่ server restart)
-let todos = [];
-let nextId = 1; // ตัวนับ ID อัตโนมัติ
+// ─── In-memory store ───────────────────────────────────────────
+let todos  = [];
+let nextId = 1;
 
-// --- API Routes ---
+// ─── Helper ────────────────────────────────────────────────────
+// แปลง :id param เป็น integer และตรวจว่าถูกต้อง
+function parseId(param) {
+  const id = parseInt(param, 10);
+  return Number.isNaN(id) ? null : id;
+}
 
-// GET /api/todos — ดึงรายการ Todo ทั้งหมด
+// ─── Routes ────────────────────────────────────────────────────
+
+// GET /api/todos
+// คืน todo ทั้งหมด เรียงจากใหม่ → เก่า
 app.get('/api/todos', (req, res) => {
   res.json(todos);
 });
 
-// POST /api/todos — เพิ่ม Todo ใหม่
+// POST /api/todos
+// body: { text: string }
+// สร้าง todo ใหม่ คืน 201 + object ที่สร้าง
 app.post('/api/todos', (req, res) => {
-  const { text } = req.body;
+  const { text } = req.body ?? {};
 
-  // ตรวจสอบว่ามีข้อความหรือไม่
-  if (!text || text.trim() === '') {
-    return res.status(400).json({ error: 'Todo text is required' });
+  if (typeof text !== 'string' || text.trim() === '') {
+    return res.status(400).json({ error: 'text is required and must be a non-empty string' });
   }
 
   const todo = {
-    id: nextId++,
-    text: text.trim(),
-    completed: false,
+    id:        nextId++,
+    text:      text.trim(),
+    done:      false,
     createdAt: new Date().toISOString(),
   };
 
-  todos.push(todo);
+  todos.unshift(todo); // เพิ่มที่ต้น array ให้แสดงใหม่สุดก่อน
   res.status(201).json(todo);
 });
 
-// PATCH /api/todos/:id — สลับสถานะ completed ของ Todo
-app.patch('/api/todos/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const todo = todos.find((t) => t.id === id);
-
-  if (!todo) {
-    return res.status(404).json({ error: 'Todo not found' });
+// PUT /api/todos/:id
+// toggle done ↔ undone คืน todo ที่อัปเดตแล้ว
+app.put('/api/todos/:id', (req, res) => {
+  const id   = parseId(req.params.id);
+  if (id === null) {
+    return res.status(400).json({ error: 'id must be a number' });
   }
 
-  // สลับสถานะ เสร็จ/ยังไม่เสร็จ
-  todo.completed = !todo.completed;
+  const todo = todos.find((t) => t.id === id);
+  if (!todo) {
+    return res.status(404).json({ error: `Todo id ${id} not found` });
+  }
+
+  todo.done      = !todo.done;
+  todo.updatedAt = new Date().toISOString();
   res.json(todo);
 });
 
-// DELETE /api/todos/:id — ลบ Todo ตาม ID
+// DELETE /api/todos/:id
+// ลบ todo คืน object ที่ถูกลบ (ให้ client ยืนยันได้)
 app.delete('/api/todos/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = todos.findIndex((t) => t.id === id);
-
-  if (index === -1) {
-    return res.status(404).json({ error: 'Todo not found' });
+  const id    = parseId(req.params.id);
+  if (id === null) {
+    return res.status(400).json({ error: 'id must be a number' });
   }
 
-  todos.splice(index, 1);
-  res.status(204).send(); // 204 No Content = ลบสำเร็จ ไม่มี body
+  const index = todos.findIndex((t) => t.id === id);
+  if (index === -1) {
+    return res.status(404).json({ error: `Todo id ${id} not found` });
+  }
+
+  const [deleted] = todos.splice(index, 1);
+  res.json({ message: 'Deleted', todo: deleted });
 });
 
-// --- Start Server ---
+// ─── 404 handler (route ที่ไม่มีในระบบ) ───────────────────────
+app.use((req, res) => {
+  res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
+});
+
+// ─── Global error handler ──────────────────────────────────────
+// รับ error ที่หลุดจาก route handlers (next(err))
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error('[Error]', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// ─── Start ─────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`Server is running at http://localhost:${PORT}`);
+  console.log(`Server running → http://localhost:${PORT}`);
 });
