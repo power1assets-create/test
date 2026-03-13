@@ -1,5 +1,8 @@
+require('dotenv').config(); // โหลด .env ก่อนทุกอย่าง
+
 const express = require('express');
 const path    = require('path');
+const pool    = require('./db');  // PostgreSQL pool
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -8,12 +11,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ─── In-memory store ───────────────────────────────────────────
-let todos  = [];
-let nextId = 1;
-
 // ─── Helper ────────────────────────────────────────────────────
-// แปลง :id param เป็น integer และตรวจว่าถูกต้อง
 function parseId(param) {
   const id = parseInt(param, 10);
   return Number.isNaN(id) ? null : id;
@@ -21,75 +19,76 @@ function parseId(param) {
 
 // ─── Routes ────────────────────────────────────────────────────
 
-// GET /api/todos
-// คืน todo ทั้งหมด เรียงจากใหม่ → เก่า
-app.get('/api/todos', (req, res) => {
-  res.json(todos);
+// GET /api/todos — ดึงทั้งหมด เรียงใหม่สุดก่อน
+app.get('/api/todos', async (req, res, next) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, text, done, created_at AS "createdAt", updated_at AS "updatedAt" FROM todos ORDER BY id DESC'
+    );
+    res.json(rows);
+  } catch (err) { next(err); }
 });
 
-// POST /api/todos
-// body: { text: string }
-// สร้าง todo ใหม่ คืน 201 + object ที่สร้าง
-app.post('/api/todos', (req, res) => {
-  const { text } = req.body ?? {};
+// POST /api/todos — เพิ่ม todo ใหม่
+app.post('/api/todos', async (req, res, next) => {
+  try {
+    const { text } = req.body ?? {};
 
-  if (typeof text !== 'string' || text.trim() === '') {
-    return res.status(400).json({ error: 'text is required and must be a non-empty string' });
-  }
+    if (typeof text !== 'string' || text.trim() === '') {
+      return res.status(400).json({ error: 'text is required and must be a non-empty string' });
+    }
 
-  const todo = {
-    id:        nextId++,
-    text:      text.trim(),
-    done:      false,
-    createdAt: new Date().toISOString(),
-  };
+    const { rows } = await pool.query(
+      `INSERT INTO todos (text) VALUES ($1)
+       RETURNING id, text, done, created_at AS "createdAt"`,
+      [text.trim()]
+    );
 
-  todos.unshift(todo); // เพิ่มที่ต้น array ให้แสดงใหม่สุดก่อน
-  res.status(201).json(todo);
+    res.status(201).json(rows[0]);
+  } catch (err) { next(err); }
 });
 
-// PUT /api/todos/:id
-// toggle done ↔ undone คืน todo ที่อัปเดตแล้ว
-app.put('/api/todos/:id', (req, res) => {
-  const id   = parseId(req.params.id);
-  if (id === null) {
-    return res.status(400).json({ error: 'id must be a number' });
-  }
+// PUT /api/todos/:id — toggle done ↔ undone
+app.put('/api/todos/:id', async (req, res, next) => {
+  try {
+    const id = parseId(req.params.id);
+    if (id === null) return res.status(400).json({ error: 'id must be a number' });
 
-  const todo = todos.find((t) => t.id === id);
-  if (!todo) {
-    return res.status(404).json({ error: `Todo id ${id} not found` });
-  }
+    const { rows } = await pool.query(
+      `UPDATE todos
+       SET done = NOT done, updated_at = NOW()
+       WHERE id = $1
+       RETURNING id, text, done, created_at AS "createdAt", updated_at AS "updatedAt"`,
+      [id]
+    );
 
-  todo.done      = !todo.done;
-  todo.updatedAt = new Date().toISOString();
-  res.json(todo);
+    if (rows.length === 0) return res.status(404).json({ error: `Todo id ${id} not found` });
+    res.json(rows[0]);
+  } catch (err) { next(err); }
 });
 
-// DELETE /api/todos/:id
-// ลบ todo คืน object ที่ถูกลบ (ให้ client ยืนยันได้)
-app.delete('/api/todos/:id', (req, res) => {
-  const id    = parseId(req.params.id);
-  if (id === null) {
-    return res.status(400).json({ error: 'id must be a number' });
-  }
+// DELETE /api/todos/:id — ลบ todo
+app.delete('/api/todos/:id', async (req, res, next) => {
+  try {
+    const id = parseId(req.params.id);
+    if (id === null) return res.status(400).json({ error: 'id must be a number' });
 
-  const index = todos.findIndex((t) => t.id === id);
-  if (index === -1) {
-    return res.status(404).json({ error: `Todo id ${id} not found` });
-  }
+    const { rows } = await pool.query(
+      'DELETE FROM todos WHERE id = $1 RETURNING id, text, done',
+      [id]
+    );
 
-  const [deleted] = todos.splice(index, 1);
-  res.json({ message: 'Deleted', todo: deleted });
+    if (rows.length === 0) return res.status(404).json({ error: `Todo id ${id} not found` });
+    res.json({ message: 'Deleted', todo: rows[0] });
+  } catch (err) { next(err); }
 });
 
-// ─── 404 handler (route ที่ไม่มีในระบบ) ───────────────────────
+// ─── 404 handler ───────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
 });
 
 // ─── Global error handler ──────────────────────────────────────
-// รับ error ที่หลุดจาก route handlers (next(err))
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error('[Error]', err);
