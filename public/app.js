@@ -1,0 +1,160 @@
+// ============================================================
+//  app.js — Client-side logic สำหรับ Todo List App
+//  ติดต่อกับ server ผ่าน Fetch API (REST)
+// ============================================================
+
+// --- State ---
+let todos = [];           // เก็บรายการ Todo ทั้งหมดที่ดึงมาจาก server
+let currentFilter = 'all'; // filter ที่กำลังใช้งาน: 'all' | 'active' | 'completed'
+
+// --- DOM References ---
+const input     = document.getElementById('todo-input');
+const addBtn    = document.getElementById('add-btn');
+const todoList  = document.getElementById('todo-list');
+const summary   = document.getElementById('summary');
+const filterBtns = document.querySelectorAll('.filter-btn');
+
+// ============================================================
+//  API Helpers — ฟังก์ชันสำหรับเรียก REST API
+// ============================================================
+
+// ดึงรายการ Todo ทั้งหมดจาก server
+async function fetchTodos() {
+  const res = await fetch('/api/todos');
+  todos = await res.json();
+  render();
+}
+
+// เพิ่ม Todo ใหม่
+async function addTodo(text) {
+  const res = await fetch('/api/todos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    alert(err.error);
+    return;
+  }
+
+  const newTodo = await res.json();
+  todos.push(newTodo); // เพิ่มลงใน local state โดยไม่ต้อง fetch ใหม่
+  render();
+}
+
+// สลับสถานะ completed ของ Todo ตาม id
+async function toggleTodo(id) {
+  const res = await fetch(`/api/todos/${id}`, { method: 'PATCH' });
+  if (!res.ok) return;
+
+  const updated = await res.json();
+  // อัปเดต local state
+  todos = todos.map((t) => (t.id === updated.id ? updated : t));
+  render();
+}
+
+// ลบ Todo ตาม id
+async function deleteTodo(id) {
+  const res = await fetch(`/api/todos/${id}`, { method: 'DELETE' });
+  if (!res.ok) return;
+
+  // กรอง Todo ที่ถูกลบออกจาก local state
+  todos = todos.filter((t) => t.id !== id);
+  render();
+}
+
+// ============================================================
+//  Render — สร้าง UI จาก state ปัจจุบัน
+// ============================================================
+
+function render() {
+  // กรองรายการตาม filter ที่เลือก
+  const filtered = todos.filter((t) => {
+    if (currentFilter === 'active')    return !t.completed;
+    if (currentFilter === 'completed') return t.completed;
+    return true; // 'all'
+  });
+
+  // ล้าง list เก่าก่อนวาดใหม่
+  todoList.innerHTML = '';
+
+  if (filtered.length === 0) {
+    // แสดง empty state
+    todoList.innerHTML = '<li class="empty">ไม่มีรายการ</li>';
+  } else {
+    filtered.forEach((todo) => {
+      const li = createTodoElement(todo);
+      todoList.appendChild(li);
+    });
+  }
+
+  // อัปเดตสรุปจำนวน
+  const remaining = todos.filter((t) => !t.completed).length;
+  summary.textContent = `เหลือ ${remaining} รายการที่ยังไม่เสร็จ จากทั้งหมด ${todos.length} รายการ`;
+}
+
+// สร้าง <li> element สำหรับ Todo หนึ่งรายการ
+function createTodoElement(todo) {
+  const li = document.createElement('li');
+  li.className = `todo-item${todo.completed ? ' completed' : ''}`;
+
+  // Checkbox สำหรับสลับสถานะ
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.className = 'todo-checkbox';
+  checkbox.checked = todo.completed;
+  checkbox.addEventListener('change', () => toggleTodo(todo.id));
+
+  // ข้อความ
+  const span = document.createElement('span');
+  span.className = 'todo-text';
+  span.textContent = todo.text;
+
+  // ปุ่มลบ
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'delete-btn';
+  deleteBtn.textContent = '✕';
+  deleteBtn.title = 'ลบรายการนี้';
+  deleteBtn.addEventListener('click', () => deleteTodo(todo.id));
+
+  li.appendChild(checkbox);
+  li.appendChild(span);
+  li.appendChild(deleteBtn);
+  return li;
+}
+
+// ============================================================
+//  Event Listeners
+// ============================================================
+
+// คลิกปุ่ม "เพิ่ม"
+addBtn.addEventListener('click', () => {
+  const text = input.value.trim();
+  if (!text) return;
+  addTodo(text);
+  input.value = ''; // ล้าง input หลังเพิ่ม
+});
+
+// กด Enter ใน input field
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') addBtn.click();
+});
+
+// คลิกปุ่ม filter
+filterBtns.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    // เปลี่ยน active class
+    filterBtns.forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    currentFilter = btn.dataset.filter;
+    render(); // วาด UI ใหม่ตาม filter
+  });
+});
+
+// ============================================================
+//  Init — โหลดข้อมูลครั้งแรกเมื่อหน้าเว็บพร้อม
+// ============================================================
+fetchTodos();
