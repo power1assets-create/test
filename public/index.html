@@ -1,210 +1,125 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Todo List App</title>
+  <title>My Todo List</title>
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // เปิด dark mode แบบ class-based
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
+
   <style>
-    /* ---- Reset & Base ---- */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    /* Custom scrollbar สำหรับ dark mode */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f0f2f5;
-      display: flex;
-      justify-content: center;
-      padding: 40px 16px;
-      min-height: 100vh;
-    }
+    /* Transition สำหรับ todo item */
+    .todo-item { transition: opacity 0.2s, transform 0.15s; }
+    .todo-item:hover { transform: translateX(2px); }
 
-    /* ---- Container ---- */
-    .container {
-      background: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-      padding: 32px;
-      width: 100%;
-      max-width: 520px;
-      height: fit-content;
-    }
+    /* Glow effect สำหรับ input focus */
+    #todo-input:focus { box-shadow: 0 0 0 2px #6366f1, 0 0 12px rgba(99,102,241,0.4); }
 
-    h1 {
-      text-align: center;
-      color: #2d3748;
-      margin-bottom: 24px;
-      font-size: 1.8rem;
-    }
-
-    /* ---- Input Form ---- */
-    .input-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 24px;
-    }
-
-    #todo-input {
-      flex: 1;
-      padding: 10px 14px;
-      border: 2px solid #cbd5e0;
-      border-radius: 8px;
-      font-size: 1rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    #todo-input:focus {
-      border-color: #667eea;
-    }
-
-    #add-btn {
-      padding: 10px 20px;
-      background: #667eea;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    #add-btn:hover {
-      background: #5a67d8;
-    }
-
-    /* ---- Filter Buttons ---- */
-    .filters {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .filter-btn {
-      flex: 1;
-      padding: 6px;
-      border: 2px solid #cbd5e0;
-      border-radius: 6px;
-      background: white;
-      cursor: pointer;
-      font-size: 0.85rem;
-      transition: all 0.2s;
-    }
-
-    .filter-btn.active {
-      background: #667eea;
-      color: white;
-      border-color: #667eea;
-    }
-
-    /* ---- Todo List ---- */
-    #todo-list {
-      list-style: none;
-    }
-
-    /* แต่ละรายการ Todo */
-    .todo-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      background: #f7fafc;
-      border: 1px solid #e2e8f0;
-      transition: opacity 0.2s;
-    }
-
-    /* Todo ที่เสร็จแล้ว จะจางลง */
-    .todo-item.completed {
-      opacity: 0.6;
-    }
-
-    .todo-item.completed .todo-text {
-      text-decoration: line-through;
-      color: #a0aec0;
-    }
-
-    /* Checkbox */
-    .todo-checkbox {
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-      accent-color: #667eea;
-    }
-
-    .todo-text {
-      flex: 1;
-      font-size: 1rem;
-      color: #2d3748;
-      word-break: break-word;
-    }
-
-    /* ปุ่มลบ */
-    .delete-btn {
-      background: none;
-      border: none;
-      color: #fc8181;
-      font-size: 1.2rem;
-      cursor: pointer;
-      padding: 2px 6px;
-      border-radius: 4px;
-      transition: background 0.2s;
-    }
-
-    .delete-btn:hover {
-      background: #fff5f5;
-    }
-
-    /* ---- Footer summary ---- */
-    .summary {
-      margin-top: 16px;
-      font-size: 0.85rem;
-      color: #718096;
-      text-align: center;
-    }
-
-    /* ---- Empty state ---- */
-    .empty {
-      text-align: center;
-      color: #a0aec0;
-      padding: 32px 0;
-      font-size: 0.95rem;
-    }
+    /* ขีดฆ่าเมื่อ task เสร็จ */
+    .line-through-text { text-decoration: line-through; }
   </style>
 </head>
-<body>
-  <div class="container">
-    <h1>📝 Todo List</h1>
 
-    <!-- ฟอร์มเพิ่ม Todo -->
-    <div class="input-row">
+<!-- พื้นหลังสีดำ dark mode -->
+<body class="dark bg-gray-950 min-h-screen flex items-start justify-center py-14 px-4">
+
+  <!-- Card หลัก -->
+  <div class="w-full max-w-lg bg-gray-900 rounded-2xl shadow-2xl shadow-black/60 border border-gray-800 p-8">
+
+    <!-- Header -->
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl font-bold text-white tracking-tight">
+        ✅ My Todo List
+      </h1>
+      <!-- นับจำนวน task ที่ยังไม่เสร็จ -->
+      <p id="summary" class="mt-2 text-sm text-gray-500"></p>
+    </div>
+
+    <!-- Input Form -->
+    <div class="flex gap-2 mb-6">
       <input
         id="todo-input"
         type="text"
-        placeholder="เพิ่มรายการใหม่..."
+        placeholder="เพิ่ม task ใหม่..."
         autocomplete="off"
+        class="flex-1 bg-gray-800 text-white placeholder-gray-600
+               border border-gray-700 rounded-xl px-4 py-2.5 text-sm
+               outline-none transition-all duration-200"
       />
-      <button id="add-btn">เพิ่ม</button>
+      <button
+        id="add-btn"
+        class="bg-indigo-600 hover:bg-indigo-500 active:scale-95
+               text-white font-semibold px-5 py-2.5 rounded-xl text-sm
+               transition-all duration-150 cursor-pointer whitespace-nowrap"
+      >
+        + เพิ่ม
+      </button>
     </div>
 
-    <!-- ปุ่มกรอง -->
-    <div class="filters">
-      <button class="filter-btn active" data-filter="all">ทั้งหมด</button>
-      <button class="filter-btn" data-filter="active">ยังไม่เสร็จ</button>
-      <button class="filter-btn" data-filter="completed">เสร็จแล้ว</button>
+    <!-- Filter Buttons -->
+    <div class="flex gap-2 mb-5">
+      <button
+        class="filter-btn flex-1 py-1.5 rounded-lg text-xs font-medium border
+               border-indigo-500 bg-indigo-600 text-white transition-all duration-150 cursor-pointer"
+        data-filter="all"
+      >ทั้งหมด</button>
+      <button
+        class="filter-btn flex-1 py-1.5 rounded-lg text-xs font-medium border
+               border-gray-700 bg-gray-800 text-gray-400 hover:text-white
+               hover:border-gray-500 transition-all duration-150 cursor-pointer"
+        data-filter="active"
+      >ยังไม่เสร็จ</button>
+      <button
+        class="filter-btn flex-1 py-1.5 rounded-lg text-xs font-medium border
+               border-gray-700 bg-gray-800 text-gray-400 hover:text-white
+               hover:border-gray-500 transition-all duration-150 cursor-pointer"
+        data-filter="completed"
+      >เสร็จแล้ว</button>
     </div>
 
-    <!-- รายการ Todo -->
-    <ul id="todo-list"></ul>
+    <!-- Divider -->
+    <div class="border-t border-gray-800 mb-4"></div>
 
-    <!-- สรุปจำนวน -->
-    <p class="summary" id="summary"></p>
+    <!-- Todo List -->
+    <ul id="todo-list" class="space-y-2 min-h-[60px]"></ul>
+
   </div>
 
   <!-- โหลด JavaScript หลัก -->
   <script src="app.js"></script>
+
+  <script>
+    // ============================================================
+    //  UI Helper — จัดการ active state ของ filter buttons
+    //  ด้วย Tailwind classes แทน CSS class เดิม
+    // ============================================================
+    const ACTIVE_CLASSES   = ['bg-indigo-600', 'border-indigo-500', 'text-white'];
+    const INACTIVE_CLASSES = ['bg-gray-800', 'border-gray-700', 'text-gray-400'];
+
+    document.querySelectorAll('.filter-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach((b) => {
+          // รีเซ็ตทุกปุ่มเป็น inactive
+          b.classList.remove(...ACTIVE_CLASSES);
+          b.classList.add(...INACTIVE_CLASSES);
+        });
+        // ปุ่มที่คลิก → active
+        btn.classList.remove(...INACTIVE_CLASSES);
+        btn.classList.add(...ACTIVE_CLASSES);
+      });
+    });
+  </script>
 </body>
 </html>

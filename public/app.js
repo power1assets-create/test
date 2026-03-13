@@ -82,7 +82,8 @@ function render() {
 
   if (filtered.length === 0) {
     // แสดง empty state
-    todoList.innerHTML = '<li class="empty">ไม่มีรายการ</li>';
+    todoList.innerHTML =
+      '<li class="text-center text-gray-600 py-10 text-sm">ไม่มีรายการ</li>';
   } else {
     filtered.forEach((todo) => {
       const li = createTodoElement(todo);
@@ -95,26 +96,36 @@ function render() {
   summary.textContent = `เหลือ ${remaining} รายการที่ยังไม่เสร็จ จากทั้งหมด ${todos.length} รายการ`;
 }
 
-// สร้าง <li> element สำหรับ Todo หนึ่งรายการ
+// สร้าง <li> element สำหรับ Todo หนึ่งรายการ (Tailwind dark theme)
 function createTodoElement(todo) {
   const li = document.createElement('li');
-  li.className = `todo-item${todo.completed ? ' completed' : ''}`;
+  li.className = [
+    'todo-item flex items-center gap-3 px-4 py-3 rounded-xl',
+    'bg-gray-800 border border-gray-700',
+    todo.completed ? 'opacity-50' : '',
+  ].join(' ');
 
   // Checkbox สำหรับสลับสถานะ
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
-  checkbox.className = 'todo-checkbox';
+  checkbox.className = 'w-4 h-4 accent-indigo-500 cursor-pointer flex-shrink-0';
   checkbox.checked = todo.completed;
   checkbox.addEventListener('change', () => toggleTodo(todo.id));
 
   // ข้อความ
   const span = document.createElement('span');
-  span.className = 'todo-text';
+  span.className = [
+    'flex-1 text-sm break-words',
+    todo.completed ? 'line-through-text text-gray-500' : 'text-gray-100',
+  ].join(' ');
   span.textContent = todo.text;
 
   // ปุ่มลบ
   const deleteBtn = document.createElement('button');
-  deleteBtn.className = 'delete-btn';
+  deleteBtn.className = [
+    'flex-shrink-0 text-gray-600 hover:text-red-400',
+    'transition-colors duration-150 text-lg leading-none cursor-pointer',
+  ].join(' ');
   deleteBtn.textContent = '✕';
   deleteBtn.title = 'ลบรายการนี้';
   deleteBtn.addEventListener('click', () => deleteTodo(todo.id));
