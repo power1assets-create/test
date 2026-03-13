@@ -100,26 +100,5 @@
   <!-- โหลด JavaScript หลัก -->
   <script src="app.js"></script>
 
-  <script>
-    // ============================================================
-    //  UI Helper — จัดการ active state ของ filter buttons
-    //  ด้วย Tailwind classes แทน CSS class เดิม
-    // ============================================================
-    const ACTIVE_CLASSES   = ['bg-indigo-600', 'border-indigo-500', 'text-white'];
-    const INACTIVE_CLASSES = ['bg-gray-800', 'border-gray-700', 'text-gray-400'];
-
-    document.querySelectorAll('.filter-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.filter-btn').forEach((b) => {
-          // รีเซ็ตทุกปุ่มเป็น inactive
-          b.classList.remove(...ACTIVE_CLASSES);
-          b.classList.add(...INACTIVE_CLASSES);
-        });
-        // ปุ่มที่คลิก → active
-        btn.classList.remove(...INACTIVE_CLASSES);
-        btn.classList.add(...ACTIVE_CLASSES);
-      });
-    });
-  </script>
 </body>
 </html>
