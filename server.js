@@ -1,101 +1,89 @@
-require('dotenv').config(); // โหลด .env ก่อนทุกอย่าง
+// ─── server.js ─────────────────────────────────────────────────────────────
+// Express server สำหรับ Todo List App
+// เก็บข้อมูลใน memory (array) — ไม่ต้องใช้ database
+// ──────────────────────────────────────────────────────────────────────────
 
 const express = require('express');
 const path    = require('path');
-const pool    = require('./db');  // PostgreSQL pool
 
 const app  = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000; // อ่าน port จาก env ก่อน, fallback 3000
 
-// ─── Middleware ────────────────────────────────────────────────
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// ─── In-Memory Data Store ──────────────────────────────────────────────────
+let todos   = [];   // เก็บรายการ todo ทั้งหมด
+let nextId  = 1;    // auto-increment id
 
-// ─── Helper ────────────────────────────────────────────────────
-function parseId(param) {
-  const id = parseInt(param, 10);
-  return Number.isNaN(id) ? null : id;
-}
+// ─── Middleware ────────────────────────────────────────────────────────────
+app.use(express.json());                                        // parse JSON body
+app.use(express.static(path.join(__dirname, 'public')));        // serve static files จาก /public
 
-// ─── Routes ────────────────────────────────────────────────────
+// ─── Routes ───────────────────────────────────────────────────────────────
 
-// GET /api/todos — ดึงทั้งหมด เรียงใหม่สุดก่อน
-app.get('/api/todos', async (req, res, next) => {
-  try {
-    const { rows } = await pool.query(
-      'SELECT id, text, done, created_at AS "createdAt", updated_at AS "updatedAt" FROM todos ORDER BY id DESC'
-    );
-    res.json(rows);
-  } catch (err) { next(err); }
+// GET /api/todos — ดึง todo ทั้งหมด
+app.get('/api/todos', (req, res) => {
+  res.json(todos);
 });
 
 // POST /api/todos — เพิ่ม todo ใหม่
-app.post('/api/todos', async (req, res, next) => {
-  try {
-    const { text } = req.body ?? {};
+// Body: { "text": "ข้อความ" }
+app.post('/api/todos', (req, res) => {
+  const { text } = req.body ?? {};
 
-    if (typeof text !== 'string' || text.trim() === '') {
-      return res.status(400).json({ error: 'text is required and must be a non-empty string' });
-    }
+  // ตรวจสอบ input
+  if (typeof text !== 'string' || text.trim() === '') {
+    return res.status(400).json({ error: 'text is required' });
+  }
 
-    const { rows } = await pool.query(
-      `INSERT INTO todos (text) VALUES ($1)
-       RETURNING id, text, done, created_at AS "createdAt"`,
-      [text.trim()]
-    );
+  const todo = {
+    id:        nextId++,
+    text:      text.trim(),
+    done:      false,               // เริ่มต้นยังไม่เสร็จ
+    createdAt: new Date().toISOString(),
+  };
 
-    res.status(201).json(rows[0]);
-  } catch (err) { next(err); }
+  todos.push(todo);
+  res.status(201).json(todo);       // 201 Created
 });
 
 // PUT /api/todos/:id — toggle done ↔ undone
-app.put('/api/todos/:id', async (req, res, next) => {
-  try {
-    const id = parseId(req.params.id);
-    if (id === null) return res.status(400).json({ error: 'id must be a number' });
+app.put('/api/todos/:id', (req, res) => {
+  const id   = parseInt(req.params.id, 10);
+  const todo = todos.find(t => t.id === id);
 
-    const { rows } = await pool.query(
-      `UPDATE todos
-       SET done = NOT done, updated_at = NOW()
-       WHERE id = $1
-       RETURNING id, text, done, created_at AS "createdAt", updated_at AS "updatedAt"`,
-      [id]
-    );
+  if (!todo) {
+    return res.status(404).json({ error: `Todo id ${id} not found` });
+  }
 
-    if (rows.length === 0) return res.status(404).json({ error: `Todo id ${id} not found` });
-    res.json(rows[0]);
-  } catch (err) { next(err); }
+  todo.done = !todo.done;           // สลับสถานะ
+  res.json(todo);
 });
 
 // DELETE /api/todos/:id — ลบ todo
-app.delete('/api/todos/:id', async (req, res, next) => {
-  try {
-    const id = parseId(req.params.id);
-    if (id === null) return res.status(400).json({ error: 'id must be a number' });
+app.delete('/api/todos/:id', (req, res) => {
+  const id  = parseInt(req.params.id, 10);
+  const idx = todos.findIndex(t => t.id === id);
 
-    const { rows } = await pool.query(
-      'DELETE FROM todos WHERE id = $1 RETURNING id, text, done',
-      [id]
-    );
+  if (idx === -1) {
+    return res.status(404).json({ error: `Todo id ${id} not found` });
+  }
 
-    if (rows.length === 0) return res.status(404).json({ error: `Todo id ${id} not found` });
-    res.json({ message: 'Deleted', todo: rows[0] });
-  } catch (err) { next(err); }
+  const [removed] = todos.splice(idx, 1);  // ตัดออกจาก array
+  res.json({ message: 'Deleted', todo: removed });
 });
 
-// ─── 404 handler ───────────────────────────────────────────────
+// ─── 404 handler ──────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ error: `Route ${req.method} ${req.path} not found` });
 });
 
-// ─── Global error handler ──────────────────────────────────────
+// ─── Global error handler ─────────────────────────────────────────────────
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error('[Error]', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// ─── Start ─────────────────────────────────────────────────────
+// ─── Start Server ─────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`Server running → http://localhost:${PORT}`);
+  console.log(`✅ Server running → http://localhost:${PORT}`);
 });
